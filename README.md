@@ -93,6 +93,7 @@ That's because the `diff` subcommand expects one or more files that are specifie
 ```
 
 The command then outputs the patch on the standard output. You can manually annotate it by adding lines starting with `#` which are then treated as comments.
+You can also comment out multiple lines by using the `/*` and `*/` syntax.
 
 ### Applying them
 
