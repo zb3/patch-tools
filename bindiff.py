@@ -6,6 +6,8 @@ import sys
 
 from collections import defaultdict
 
+from utils import LineReader, to_file
+
 CHUNK_SIZE = 16
 MIN_NON_DIFF_BYTES = 16
 
@@ -56,30 +58,30 @@ def _chunks(n, size):
         pos += size
 
 
-def diff_command(diff_dir, file_groups):
+def diff_command(diff_dir, file_groups, write_line):
     for file1, file2, target_name in file_groups:
         shown = False
         for start, before, after in diff(file1, file2, basedir=diff_dir):
             if not shown:
-                print(f">> {target_name}")
+                write_line(f">> {target_name}")
                 shown = True
 
-            print(f"@0x{start:08x}")
+            write_line(f"@0x{start:08x}")
 
             for data in [before, after]:
                 if data:
                     for lstart, lend in _chunks(len(data), CHUNK_SIZE):
                         prefix = "- " if data is before else "+ "
-                        print(prefix + " ".join(f"{byte:02x}" for byte in data[lstart:lend]))
+                        write_line(prefix + " ".join(f"{byte:02x}" for byte in data[lstart:lend]))
 
-def parse_diff(unpatch=False):
+def parse_diff(reader, unpatch=False):
     patches = defaultdict(lambda: defaultdict(lambda: {'old': b'', 'new': b''}))  
     current_file = None
     current_offset = None
 
     in_multiline_comment = False
 
-    for line in sys.stdin:
+    for line in reader.get_lines():
         line = line.strip()
         
         if in_multiline_comment:
@@ -146,16 +148,10 @@ def apply_patches(patches, diff_dir='.'):
                 file.truncate(offset + len(new_bytes))  # truncate file
 
 
-def patch_command(diff_dir='.', unpatch=False):
-    patches = parse_diff(unpatch)
+def patch_command(reader, diff_dir='.', unpatch=False):
+    patches = parse_diff(reader, unpatch)
 
-    try:
-        verify_patches(patches, diff_dir)
-    except ValueError as ve:
-        print(f'Error: {ve.args[0]}', file=sys.stderr)
-        print('Aborting.')
-        exit(1)
-
+    verify_patches(patches, diff_dir)
     apply_patches(patches, diff_dir)
 
 def custom_parser(args):
@@ -221,10 +217,15 @@ def main():
 
     if args.command == 'diff':
         file_groups = custom_parser(remainder)
-        diff_command(args.patch_dir, file_groups)
+        diff_command(args.patch_dir, file_groups, to_file())
 
     elif args.command == 'patch':
-        patch_command(args.patch_dir, args.unpatch)
+        try:
+            patch_command(LineReader(sys.stdin), args.patch_dir, args.unpatch)
+        except ValueError as ve:
+            print(f'Error: {ve.args[0]}', file=sys.stderr)
+            print('Aborting.')
+            exit(1)
 
 if __name__ == '__main__':
     main()
