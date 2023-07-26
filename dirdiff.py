@@ -86,7 +86,10 @@ def get_file_type(path):
     st = os.lstat(path)
     return stat.S_IFMT(st.st_mode)
 
-def compare_directory_structure(dir1, dir2, parent_dir='', ret=None, include_possibly_modified=False):
+def compare_directory_structure(dir1, dir2, parent_dir='', ret=None, include_possibly_modified=False, exclude_paths=None):
+    if not exclude_paths:
+        exclude_paths = []
+
     if ret is None:
         ret = {
             'removed_dirs': [],
@@ -99,8 +102,8 @@ def compare_directory_structure(dir1, dir2, parent_dir='', ret=None, include_pos
             ret['possibly_modified'] = []
 
 
-    dir1_contents = set(os.listdir(dir1)) if dir1 else set()
-    dir2_contents = set(os.listdir(dir2))
+    dir1_contents = set(x for x in os.listdir(dir1) if f'{parent_dir}/{x}' not in exclude_paths) if dir1 else set()
+    dir2_contents = set(x for x in os.listdir(dir2) if f'{parent_dir}/{x}' not in exclude_paths)
 
     removed = dir1_contents - dir2_contents
     added = dir2_contents - dir1_contents
@@ -156,18 +159,29 @@ def compare_directory_structure(dir1, dir2, parent_dir='', ret=None, include_pos
             new_dir1 = new_dir1 if (dir1 and os.path.isdir(new_dir1) and not os.path.islink(new_dir1)) else None
 
             compare_directory_structure(
-                new_dir1, subdir_path, os.path.join(parent_dir, subdir), ret, include_possibly_modified=include_possibly_modified
+                new_dir1, subdir_path, os.path.join(parent_dir, subdir), ret, include_possibly_modified=include_possibly_modified, exclude_paths=exclude_paths
             )
 
     return ret
 
+def replace_prolog_prefix(orig, new, line):
+    lparts = line.split(' ', 1)
 
-def compare_directories(dir1, dir2):
+    if lparts[1].startswith('"'):
+        orig = '"' + orig.replace("\\", "\\\\").replace('"', '\\"')
+        new = '"' + new.replace("\\", "\\\\").replace('"', '\\"')
+    
+    lparts[1] = new + lparts[1][len(orig):]
+    line = ' '.join(lparts)
+
+    return line
+
+def compare_directories(dir1, dir2, exclude_paths=None, **kwargs):
     # note excludes can be used
     dir1 = dir1.rstrip('/')
     dir2 = dir2.rstrip('/')
 
-    structure_diff = compare_directory_structure(dir1, dir2, include_possibly_modified=True)
+    structure_diff = compare_directory_structure(dir1, dir2, include_possibly_modified=True, exclude_paths=exclude_paths)
 
     changed_files = retrieve_changed_files(dir1, dir2, sorted(structure_diff['possibly_modified']))
 
@@ -221,15 +235,11 @@ def compare_directories(dir1, dir2):
 
             if in_prolog:
                 if line.startswith('--- '):
-                    lparts = line.split(' ')
-                    lparts[1] = 'a' + lparts[1][len(dir1):]
-                    line = ' '.join(lparts)
+                    line = replace_prolog_prefix(dir1, 'a', line)
         
                 elif line.startswith('+++ '):
-                    lparts = line.split(' ')
-                    lparts[1] = 'b' + lparts[1][len(dir2):]
-                    line = ' '.join(lparts)
-        
+                    line = replace_prolog_prefix(dir2, 'b', line)
+
                     in_prolog = False
         
         
@@ -239,12 +249,12 @@ def compare_directories(dir1, dir2):
     return ret
 
 
-def diff_command(dir1, dir2, write_line):
+def diff_command(dir1, dir2, write_line, **kwargs):
     dir1 = dir1.rstrip('/') or '/.'
     dir2 = dir2.rstrip('/') or '/.'
 
 
-    diff_dict = compare_directories(dir1, dir2)
+    diff_dict = compare_directories(dir1, dir2, **kwargs)
     if diff_dict['remove_dirs']:
         write_line('remove directories:')
         
