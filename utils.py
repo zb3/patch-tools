@@ -123,39 +123,6 @@ if __name__ == '__main__':
                 print('li', li)
 
 
-
-def compare_directory_structure(dir1, dir2, parent_dir=''):
-    removed_dirs = []
-    added_dirs = []
-
-    dir1_contents = set(os.listdir(dir1)) if dir1 else set()
-    dir2_contents = set(os.listdir(dir2))
-
-    removed = dir1_contents - dir2_contents
-    for removed_dir in removed:
-        if os.path.isdir(os.path.join(dir1, removed_dir)):
-            removed_dirs.append(os.path.join(parent_dir, removed_dir))
-
-    added = dir2_contents - dir1_contents
-    for added_dir in added:
-        if os.path.isdir(os.path.join(dir2, added_dir)):
-            added_dirs.append(os.path.join(parent_dir, added_dir))
-
-
-    for subdir in dir2_contents:
-        subdir_path = os.path.join(dir2, subdir)
-        if os.path.isdir(subdir_path):
-            new_dir1 = dir1 and os.path.join(dir1, subdir)
-            new_dir1 = new_dir1 if dir1 and os.path.isdir(new_dir1) else None
-
-            nested_removed, nested_added = compare_directory_structure(
-                new_dir1, subdir_path, os.path.join(parent_dir, subdir)
-            )
-            removed_dirs.extend(nested_removed)
-            added_dirs.extend(nested_added)
-
-    return removed_dirs, added_dirs
-
 def escape_text_line(line, allow_spaces=False):
     line = line.replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r')
     if not allow_spaces and re.match(r'^\s', line):
