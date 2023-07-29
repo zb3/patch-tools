@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cur_dir="$(dirname "$0")"
+set -x
+"$cur_dir/third_party/zipalign" -p 4 "$1" "$1.aligned" && mv "$1.aligned" "$1"
+"$cur_dir/third_party/apksigner" sign --ks "$cur_dir/debug.keystore" --ks-pass pass:android "$1"
+

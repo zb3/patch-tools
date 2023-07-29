@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cur_dir="$(dirname "$0")"
+apk_dir="$1"
+apk_file="$2"
+
+shift
+shift
+
+[ -z "$apk_file" ] && apk_file="$apk_dir.apk"
+
+"$cur_dir/third_party/apktool" b -o "$apk_file" "$@" "$apk_dir"
+
+echo >&2 signing "$apk_file"
+"$cur_dir/sign" "$apk_file"

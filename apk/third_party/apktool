@@ -1,0 +1,6 @@
+#!/bin/sh
+
+cur_dir="$(dirname "$0")"
+
+exec java -jar "$cur_dir"/apktool_*.jar "$@"
+
