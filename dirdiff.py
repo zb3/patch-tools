@@ -502,7 +502,7 @@ def main():
     #patch_parser.add_argument('-u', '--unpatch', action='store_true', help='Experimental unpatch mode')
 
     args = parser.parse_args()
-    print('args', args)
+    #print('args', args)
 
     if args.command == 'diff':
         diff_command(args.dir1, args.dir2, to_file())
