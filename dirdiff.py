@@ -331,10 +331,7 @@ def parse_diff(reader):
         'diff': None
     }
 
-    for line in reader.get_lines():
-        if not line:
-            continue
-    
+    for line in reader.get_lines():    
         if line == 'remove directories:':
             for fname in reader.get_lines():
                 ret['remove_dirs'].append(unescape_text_line(fname))
@@ -360,7 +357,7 @@ def parse_diff(reader):
                 ret['new_files'].append((unescape_text_line(fname), base64.b64decode(fcontent)))
     
         elif line == 'diff:':
-            ret['diff'] = ('\n'.join(unescape_text_line(l) for l in reader.get_lines()) + '\n').encode('utf-8')
+            ret['diff'] = ('\n'.join(unescape_text_line(l) for l in reader.get_lines(include_empty=True)) + '\n').encode('utf-8')
 
     return ret
 

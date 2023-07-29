@@ -13,7 +13,7 @@ def to_file(file=sys.stdout):
 
 def with_indent(stream, indent='  '):
     def write(x):
-        for line in x.splitlines():
+        for line in (x.splitlines() or ['']):
             stream(indent+line)
 
     return write 
