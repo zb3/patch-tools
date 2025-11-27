@@ -14,7 +14,6 @@ shopt -s nocasematch
 [ -z "$dst_file" ] && dst_file="${src_file/%.xapk/.apk}"
 shopt -u nocasematch
 
-
-java -jar "$cur_dir/third_party/apkeditor.jar" m -i "$src_file" -o "$dst_file"
+"$cur_dir/third_party/apkeditor" m -i "$src_file" -o "$dst_file"
 
 
